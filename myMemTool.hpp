@@ -4,14 +4,15 @@
  * @Github: https://github.com/wangjunbo4
  * @Date: 2022-05-26 12:01:36
  * @LastEditors: Gtylcara
- * @LastEditTime: 2022-05-26 19:21:34
+ * @LastEditTime: 2022-05-26 23:14:54
  * @FilePath: /memcheck/myMemTool.hpp
  */
+#pragma once
 
 #ifndef _MYMEMTOOL_HPP_
 #define _MYMEMTOOL_HPP_
 
-#include <string>
+#include <cstring>
 #include <iostream>
 #include <mutex>
 #include <cstring>
@@ -22,6 +23,8 @@ struct Map_t
 {
     void *p;
     int cnt;
+    char *file;
+    int line;
     struct Map_t *next;
 };
 
@@ -33,17 +36,19 @@ public:
     {
     }
 
-    static bool In(void * p)
+    static bool In(void * p, const char* file, int line)
     {
         std::unique_lock<std::mutex> lock(getLock());
         auto memoryMap = getMap();
-        std::cout << "In: " << p << std::endl;
         
         while (memoryMap != nullptr)
         {
             if (memoryMap->p == p)
             {
                 memoryMap->cnt = 1;
+                memoryMap->file = (char *)malloc(strlen(file) + 1);
+                std::strcpy(memoryMap->file, file);
+                memoryMap->line = line;
                 return true;
             }
             memoryMap = memoryMap->next;
@@ -69,6 +74,9 @@ public:
             if (memoryMap->p == p)
             {
                 memoryMap->cnt = 0;
+                free(memoryMap->file);
+                memoryMap->file = nullptr;
+                memoryMap->line = 0;
                 return true;
             }
             memoryMap = memoryMap->next;
@@ -86,7 +94,7 @@ public:
         {
             if (memoryMap->cnt != 0)
             {
-                std::cout << "memory leak: " << memoryMap->p << std::endl;
+                std::cout << "memory leak: " << memoryMap->p << " in file: " << memoryMap->file << " line: " << memoryMap->line << std::endl;
                 cnt++;
             }
             memoryMap = memoryMap->next;
@@ -112,6 +120,8 @@ private:
         p->p = nullptr;
         p->cnt = 0;
         p->next = nullptr;
+        p->file = nullptr;
+        p->line = 0;
         return p;
     }
 
@@ -120,6 +130,7 @@ private:
         if (p == head)
         {
             head = p->next;
+            free(p->file);
             free(p);
             return;
         }
@@ -131,6 +142,7 @@ private:
             q = q->next;
         }
         q->next = p->next;
+        free(p->file);
         free(p);
     }
 
@@ -140,6 +152,7 @@ private:
         {
             auto temp = p;
             p = p->next;
+            free(temp->file);
             free(temp);
         }
     }
@@ -163,19 +176,23 @@ private:
     }
 };
 
-void* operator new(std::size_t size) { 
+inline void* operator new(std::size_t size, const char *file, int line)
+{
     auto p = malloc(size);
-    if (MyMemTools::In(p))
+    std::cout << "new: " << p << " in file: " << file << " line: " << line << std::endl;
+    if (MyMemTools::In(p, file, line))
     {
-        return operator new(size, p);
+        return p;
     }
     else
     {
+        free(p);
         throw(std::bad_alloc());
     }
 }
 
-void operator delete(void *p) { 
+
+inline void operator delete(void *p) { 
     std::cout << "deallocate\n";
     if (MyMemTools::Out(p))
     {
