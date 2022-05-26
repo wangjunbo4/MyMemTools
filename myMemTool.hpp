@@ -4,7 +4,7 @@
  * @Github: https://github.com/wangjunbo4
  * @Date: 2022-05-26 12:01:36
  * @LastEditors: Gtylcara
- * @LastEditTime: 2022-05-26 23:14:54
+ * @LastEditTime: 2022-05-26 23:22:17
  * @FilePath: /memcheck/myMemTool.hpp
  */
 #pragma once
@@ -57,6 +57,9 @@ public:
         auto temp = newNode();
         temp->p = p;
         temp->cnt = 1;
+        temp->file = (char *)malloc(strlen(file) + 1);
+        std::strcpy(temp->file, file);
+        temp->line = line;
         insertNode(getMap(), temp);
 
         return true;
