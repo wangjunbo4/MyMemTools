@@ -1,0 +1,14 @@
+# Xmake cache
+.xmake/
+build/
+
+test.cpp
+main.cpp
+test.h
+.vscode/
+*.lua
+
+# MacOS Cache
+.DS_Store
+
+
