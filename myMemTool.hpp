@@ -4,7 +4,7 @@
  * @Github: https://github.com/wangjunbo4
  * @Date: 2022-05-26 12:01:36
  * @LastEditors: Gtylcara
- * @LastEditTime: 2022-05-26 23:22:17
+ * @LastEditTime: 2022-05-27 11:38:11
  * @FilePath: /memcheck/myMemTool.hpp
  */
 #pragma once
@@ -202,5 +202,7 @@ inline void operator delete(void *p) {
         free(p);
     }
 }
+
+#define new new(__FILE__, __LINE__)
 
 #endif
